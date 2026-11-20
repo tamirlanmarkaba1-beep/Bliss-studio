@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nova.studio.ui.NovaColors
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 /**
@@ -115,7 +116,13 @@ private fun ElementContent(el: GuiElement, editMode: Boolean) {
     val shape = RoundedCornerShape(el.radius.coerceAtLeast(0f).dp)
     when (el.type) {
         GuiType.BUTTON -> Box(Modifier.fillMaxSize().clip(shape).background(color), Alignment.Center) {
-            Text(el.text, color = Color.White, fontWeight = FontWeight.Bold, fontSize = (el.h * 0.34f).coerceIn(8f, 28f).sp, maxLines = 1)
+            Text(
+                el.text,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = (el.h * 0.34f).coerceIn(8f, 28f).sp,
+                maxLines = 1
+            )
         }
         GuiType.SHAPE -> Box(Modifier.fillMaxSize().clip(shape).background(color))
         GuiType.ICON -> Box(Modifier.fillMaxSize().clip(shape).background(color.copy(alpha = 0.9f)), Alignment.Center) {
@@ -147,22 +154,27 @@ private fun Joystick(el: GuiElement, editMode: Boolean) {
     var knob by remember { mutableStateOf(Offset.Zero) }
     val color = Color(el.color.toInt())
     Canvas(
-        Modifier.fillMaxSize().pointerInput(editMode) {
-            if (!editMode) {
-                detectDragGestures(
-                    onDragEnd = { knob = Offset.Zero },
-                    onDragCancel = { knob = Offset.Zero }
-                ) { change, _ ->
-                    change.consume()
-                    val c = Offset(size.width / 2f, size.height / 2f)
-                    val maxLen = size.minDimension * 0.28f
-                    var d = change.position - c
-                    val len = d.getDistance()
-                    if (len > maxLen) d = d * (maxLen / len)
-                    knob = d
+        Modifier
+            .fillMaxSize()
+            .pointerInput(editMode) {
+                if (!editMode) {
+                    detectDragGestures(
+                        onDragEnd = { knob = Offset.Zero },
+                        onDragCancel = { knob = Offset.Zero }
+                    ) { change, _ ->
+                        change.consume()
+                        val minSide = min(size.width, size.height).toFloat()
+                        val c = Offset(size.width / 2f, size.height / 2f)
+                        val maxLen = minSide * 0.28f
+                        var d = change.position - c
+                        val len = d.getDistance()
+                        if (len > maxLen && len > 0f) {
+                            d = d * (maxLen / len)
+                        }
+                        knob = d
+                    }
                 }
             }
-        }
     ) {
         val r = size.minDimension / 2f
         drawCircle(color.copy(alpha = 0.18f), r)
